@@ -50,6 +50,9 @@ def grid_selector(pcf, var, extent, pac_patch=False):
     grid_array
         Ndarray to put in patch dataset.
     '''
+    
+    if var not in pcf:
+        raise ValueError(f"Variable '{var}' not found in the parent coordinate file.")
 
     # grid type lists
     t_vars = ['nav_lon', 'nav_lat', 'glamt', 'gphit', 'e1t', 'e2t']
@@ -75,6 +78,15 @@ def grid_selector(pcf, var, extent, pac_patch=False):
 
 # Dataset creation
 # TODO: dataset generator. I don't like this wet shit.
+
+def create_dataset(pcf, extent, pac_patch=False):
+    return xr.Dataset(
+        data_vars=dict(
+            nav_lon=(["y", "x"], grid_selector(pcf, 'nav_lon', extent, pac_patch)),
+            nav_lat=(["y", "x"], grid_selector(pcf, 'nav_lat', extent, pac_patch)),
+            # ... и далее
+        )
+    )
 
 # Atlantic patch as xarray Dataset
 atl_extent = [atl_first_yind, atl_last_yind, atl_first_xind, atl_last_xind]
@@ -130,3 +142,12 @@ whole_dataset = xr.concat([atl_dataset, pac_dataset], dim='y')
 whole_dataset.to_netcdf(f'{target_path}/{target_name}')
 
 # TODO: Some visualization?
+
+def plot_dataset(dataset, title):
+    plt.figure(figsize=(10, 6))
+    ax = plt.axes(projection=ccrs.PlateCarree())
+    dataset['nav_lon'].plot(ax=ax, transform=ccrs.PlateCarree())
+    ax.add_feature(cfeature.LAND, edgecolor='black')
+    ax.add_feature(cfeature.COASTLINE)
+    ax.set_title(title)
+    plt.show()
